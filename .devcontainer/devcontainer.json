@@ -1,0 +1,5 @@
+{
+    "name": "API",
+    "image": "node:16",
+    "postCreateCommand": "/bin/bash .devcontainer/install.sh"
+}
