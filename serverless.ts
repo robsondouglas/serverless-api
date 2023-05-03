@@ -1,17 +1,21 @@
 import type { AWS } from '@serverless/typescript';
-
+import { auth, addTask, addImage, readTask, listTask, listImages, removeTask } from './src/index'
 
 const stage = '${opt:stage, "dev"}'
-const tblQuestionario = `QUE_QUESTIONARIO_${stage}`;
-const tblAvaliacao    = `QUE_AVALIACAO_${stage}`;
+const tblTask = `TSK_TASK_${stage}`;
+const tblImg  = `TSK_IMAGE_${stage}`;
+const bktTmp    = `tmp.sls.poc`;
+const bktPriv    = `priv.sls.poc`;
+const keyAWS     = 813397945060;
 
 const serverlessConfiguration: AWS = {
-  service: 'questionario',
+  service: 'taskmanager',
   frameworkVersion: '3',
   plugins: ['serverless-esbuild', 'serverless-offline', 'serverless-dynamodb-local'],
   provider: {
     name: 'aws',
-    runtime: 'nodejs14.x',
+    region: 'sa-east-1',
+    runtime: 'nodejs16.x',
     apiGateway: {
       minimumCompressionSize: 1024,
       shouldStartNameWithService: true,
@@ -19,13 +23,32 @@ const serverlessConfiguration: AWS = {
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
-      tblAvaliacao,
-      tblQuestionario
+      tblTask,
+      tblImg,
+      bktTmp,
+      bktPriv
     },
+    iam:{
+      role:{
+        statements:[
+          {
+            Effect: "Allow", 
+            Action: ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
+            Resource: [`arn:aws:s3:::tmp.sls.poc`, `arn:aws:s3:::priv.sls.poc`]
+          },
+          {
+            Effect: "Allow", 
+            Action: ["dynamodb:*"],
+            Resource: [`arn:aws:dynamodb:sa-east-1:${keyAWS}:${tblTask}`]
+          }
+        ]
+      }
+    }
   },
   // import the function via paths
-  functions: {  },
+  functions: { auth, addTask, addImage, readTask, listTask, listImages, removeTask },
   package:   { individually: true },
+  
   custom: {
     dynamodb: {
       stages: [stage],
@@ -50,17 +73,17 @@ const serverlessConfiguration: AWS = {
   },
   resources:{
     Resources:{
-      tblQuestionario: {
+      tblTask: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
-          TableName: tblQuestionario,
+          TableName: tblTask,
           AttributeDefinitions:[
-            {AttributeName:'IdQuestionario', AttributeType: 'S'},
-            {AttributeName:'Versao', AttributeType: 'S'}
+            {AttributeName:'IdOwner', AttributeType: 'S'},
+            {AttributeName:'DayTask',     AttributeType: 'N'}
           ],
           KeySchema:[
-            {AttributeName: 'IdQuestionario', KeyType: 'HASH'},
-            {AttributeName: 'Versao',         KeyType: 'RANGE'}
+            {AttributeName: 'IdOwner', KeyType: 'HASH'},
+            {AttributeName: 'DayTask',     KeyType: 'RANGE'}
           ],
           ProvisionedThroughput:{
             ReadCapacityUnits:  10,
@@ -68,21 +91,19 @@ const serverlessConfiguration: AWS = {
           }
         }
       },
-      tblAvaliacao: {
+      tblImage: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
-          TableName: tblAvaliacao,
+          TableName: tblImg,
           AttributeDefinitions:[
-            {AttributeName:'IdAvaliado', AttributeType: 'S'},
-            {AttributeName:'IdAvaliacao', AttributeType: 'S'}
+            {AttributeName:'IdOwner', AttributeType: 'S'}
           ],
           KeySchema:[
-            {AttributeName: 'IdAvaliado',   KeyType: 'HASH'},
-            {AttributeName: 'IdAvaliacao',  KeyType: 'RANGE'}
+            {AttributeName: 'IdOwner', KeyType: 'HASH'}
           ],
           ProvisionedThroughput:{
-            ReadCapacityUnits: 10,
-            WriteCapacityUnits: 5
+            ReadCapacityUnits:  10,
+            WriteCapacityUnits: 2
           }
         }
       }
