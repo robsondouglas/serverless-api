@@ -6,7 +6,7 @@ import { GetObjectCommand, S3Client, CopyObjectCommand, DeleteObjectCommand, Put
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
-const ddb = new DynamoDBClient({ region: "local", endpoint: "http://localhost:8000"  });
+const ddb = new DynamoDBClient({ region: "sa-east-1"  })//({ region: "local", endpoint: "http://localhost:8000"  });
 const s3 = new S3Client({ region: "sa-east-1" });
         
 const tblTask = process.env.tblTask;
