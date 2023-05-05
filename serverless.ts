@@ -1,5 +1,5 @@
 import type { AWS } from '@serverless/typescript';
-import { auth, addTask, addImage, readTask, listTask, listImages, removeTask } from './src/index'
+import { auth, addTask, addImage, readTask, listTask, listImages, removeTask, wsConn, wsDisc, wsDefault } from './src/index'
 
 const stage = '${opt:stage, "dev"}'
 const tblTask = `TSK_TASK_${stage}`;
@@ -46,7 +46,7 @@ const serverlessConfiguration: AWS = {
     }
   },
   // import the function via paths
-  functions: { auth, addTask, addImage, readTask, listTask, listImages, removeTask },
+  functions: { auth, addTask, addImage, readTask, listTask, listImages, removeTask, wsConn, wsDisc, wsDefault },
   package:   { individually: true },
   
   custom: {
@@ -78,12 +78,12 @@ const serverlessConfiguration: AWS = {
         Properties: {
           TableName: tblTask,
           AttributeDefinitions:[
-            {AttributeName:'IdOwner', AttributeType: 'S'},
-            {AttributeName:'DayTask',     AttributeType: 'N'}
+            {AttributeName:'IdOwner',    AttributeType: 'S'},
+            {AttributeName:'IdTask',     AttributeType: 'S'}
           ],
           KeySchema:[
-            {AttributeName: 'IdOwner', KeyType: 'HASH'},
-            {AttributeName: 'DayTask',     KeyType: 'RANGE'}
+            {AttributeName: 'IdOwner', KeyType:    'HASH'},
+            {AttributeName: 'IdTask',  KeyType: 'RANGE'}
           ],
           ProvisionedThroughput:{
             ReadCapacityUnits:  10,

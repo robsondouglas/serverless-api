@@ -106,3 +106,21 @@ export const listImages = {
     },
   ],
 };
+
+export const wsConn = {
+  handler: `${handlerPath(__dirname)}/handler.wsConn`,
+  description: "WebSocket", 
+  events: [ { websocket: {authorizer: 'auth', route: '$connect'} }],
+};
+
+export const wsDisc = {
+  handler: `${handlerPath(__dirname)}/handler.wsDisc`,
+  description: "WebSocket", 
+  events: [ { websocket: {route: '$disconnect'} } ],
+};
+
+export const wsDefault = {
+  handler: `${handlerPath(__dirname)}/handler.wsDefault`,
+  description: "WebSocket", 
+  events: [ { websocket: {authorizer: 'auth', route: '$default'} } ],
+};

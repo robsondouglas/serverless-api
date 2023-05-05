@@ -12,6 +12,7 @@
         "node": ">=14.15.0"
     },
     "dependencies": {
+        "@aws-sdk/client-apigatewaymanagementapi": "^3.327.0",
         "@aws-sdk/client-dynamodb": "^3.325.0",
         "@aws-sdk/client-s3": "^3.325.0",
         "@aws-sdk/s3-request-presigner": "^3.325.0",
