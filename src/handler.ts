@@ -18,7 +18,7 @@ const generatePolicy = (principalId, effect, resource, data) => {
 };
 
 export const auth    = async(event, _, callback)=> {
-  const tokenValue = event.authorizationToken?.split(' ')[1];
+  const tokenValue = (event.authorizationToken || event.headers['Authorization'])?.split(' ')[1] ;
 
   if(!tokenValue)
   {

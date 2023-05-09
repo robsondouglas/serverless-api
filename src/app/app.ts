@@ -1,17 +1,21 @@
 //import {DeleteItemCommand, DeleteItemCommandInput, DynamoDBClient, GetItemCommand, GetItemCommandInput, PutItemCommand, PutItemCommandInput, QueryCommand, QueryCommandInput} from '@aws-sdk/client-dynamodb';
+import { TextEncoder } from 'util';
 import { IData as ITaskData, IPK as ITaskPK, IFIlter as ITaskFilter } from './task/models';
-import { GetObjectCommand, S3Client, CopyObjectCommand, DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { randomUUID } from 'crypto';
+// import { GetObjectCommand, S3Client, CopyObjectCommand, DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+// import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+// import { randomUUID } from 'crypto';
 import { Task } from './task/task';
-  
+import {
+    ApiGatewayManagementApiClient,
+    PostToConnectionCommand,
+  } from "@aws-sdk/client-apigatewaymanagementapi";
 
 //const s3 = new S3Client({ region: "sa-east-1" });
         
 // const tblImg = process.env.tblImg;
 // const bktTmp  = process.env.bktTmp;
 // const bktPriv = process.env.bktPriv;
-
+const client = new ApiGatewayManagementApiClient({ endpoint: 'http://localhost:3001' });
 
 export class App{
 
@@ -22,6 +26,9 @@ export class App{
         await task.post(itm);
         
         
+        const enc = new TextEncoder();
+        const cmd = new PostToConnectionCommand({ ConnectionId: undefined, Data: enc.encode(JSON.stringify(itm)) });
+        await client.send(cmd);        
     }
 
     async getTask(pk:ITaskPK){

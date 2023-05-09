@@ -8,9 +8,13 @@ const tblTask = process.env.tblTask;
 
 export class Task{
 
-    private mdl2db = (mdl:any)=>({
-        IdOwner:   {S:      mdl.IdOwner},
-        IdTask:    {S:      mdl.IdTask },
+    private pk2db = (pk:IPK) => ({
+        IdOwner:   {S:      pk.IdOwner},
+        IdTask:    {S:      pk.IdTask },        
+    })
+
+    private mdl2db = (mdl:IData)=>({
+        ...this.pk2db(mdl),
         StartTime: {N:      mdl.StartTime.valueOf().toString()},
         EndTime:   {N:      mdl.EndTime.valueOf().toString()},
         GroupId:   {N:      mdl.GroupId.toString()},
@@ -38,13 +42,10 @@ export class Task{
         ];
     }
     
-    async get(key:IPK){
+    async get(pk:IPK){
         const {Item} = await ddb.send( new GetItemCommand({
             TableName: tblTask,
-            Key: {  
-                IdOwner:  {S: key.IdOwner},
-                IdTask:   {S: key.IdTask}
-            }             
+            Key: this.pk2db(pk)             
         }));
         
         return Item ? this.db2mdl(Item) : null;
@@ -80,29 +81,25 @@ export class Task{
                     Item: this.mdl2db({...itm, IdOwner: scene})
                 }));
             }
-            
         }
     }
 
-    async del (key:IPK){
-        const itm = await this.get(key);
+    async del (pk:IPK){
+        const itm = await this.get(pk);
         
         if(itm){
             const scenes = this.loadScenes(itm.StartTime, itm.IdOwner);
-                
+
             for(const scene of scenes){
                 await ddb.send( new DeleteItemCommand({
                     TableName: tblTask,
-                    Key: {  
-                        IdOwner:  {S: scene},
-                        IdTask:   {S: key.IdTask}
-                    }
+                    Key: this.pk2db({ ...pk, IdOwner: scene })                     
                 }));
-            }       
+            } 
         }
     }
 
-    async put(items:IData[]){        
+    async put(items:IData[]){
         //REMOVENDO A VERSÃO ANTERIOR            
         for(const itm of items)
         { await this.del(itm); }

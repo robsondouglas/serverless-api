@@ -1,12 +1,12 @@
 import type { AWS } from '@serverless/typescript';
 import { auth, addTask, addImage, readTask, listTask, listImages, removeTask, wsConn, wsDisc, wsDefault } from './src/index'
 
-const stage = '${opt:stage, "dev"}'
-const tblTask = `TSK_TASK_${stage}`;
-const tblImg  = `TSK_IMAGE_${stage}`;
-const bktTmp    = `tmp.sls.poc`;
-const bktPriv    = `priv.sls.poc`;
-const keyAWS     = 813397945060;
+const stage       = '${opt:stage, "dev"}'
+const tblTask     = `TSK_TASK_${stage}`;
+const tblGallery  = `TSK_GALLERY_${stage}`;
+const bktTmp      = `tmp.sls.poc`;
+const bktPriv     = `priv.sls.poc`;
+const keyAWS      = 813397945060;
 
 const serverlessConfiguration: AWS = {
   service: 'taskmanager',
@@ -24,7 +24,7 @@ const serverlessConfiguration: AWS = {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       tblTask,
-      tblImg,
+      tblGallery,
       bktTmp,
       bktPriv
     },
@@ -85,22 +85,33 @@ const serverlessConfiguration: AWS = {
             {AttributeName: 'IdOwner', KeyType:    'HASH'},
             {AttributeName: 'IdTask',  KeyType: 'RANGE'}
           ],
-          ProvisionedThroughput:{
+          ProvisionedThroughput: {
             ReadCapacityUnits:  10,
             WriteCapacityUnits: 2
           }
         }
       },
-      tblImage: {
+      tblGallery: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
-          TableName: tblImg,
+          TableName: tblGallery,
           AttributeDefinitions:[
-            {AttributeName:'IdOwner', AttributeType: 'S'}
+            {AttributeName:'IdOwner',  AttributeType: 'S'},
+            {AttributeName: 'IdPicture', AttributeType: 'S'},
+            {AttributeName: 'DateAdd', AttributeType: 'N'}
           ],
           KeySchema:[
-            {AttributeName: 'IdOwner', KeyType: 'HASH'}
+            {AttributeName: 'IdOwner', KeyType: 'HASH'},
+            {AttributeName: 'IdPicture', KeyType: 'RANGE'}
           ],
+          LocalSecondaryIndexes:[{
+            IndexName: `${tblGallery}_IDX_DATE`,
+            KeySchema:[
+              {AttributeName: 'IdOwner', KeyType: 'HASH'},
+              {AttributeName: 'DateAdd', KeyType: 'RANGE'},
+            ],
+            Projection: {ProjectionType: "ALL"}
+          }],
           ProvisionedThroughput:{
             ReadCapacityUnits:  10,
             WriteCapacityUnits: 2

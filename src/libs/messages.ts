@@ -14,5 +14,15 @@ export const MESSAGES = {
                 START_END: 'Não é possível o término anterior ao início'
             }
         }
+    },
+    GALLERY:{
+        REQUIREDS:{
+            POST:{
+                OWNER: 'Não é possível incluir uma imagem sem um proprietário',
+                DATEADD: 'Não é possível incluir uma imagem sem uma data de cadastro',
+                TITLE: 'Não é possível incluir uma imagem sem um título',
+            }
+        }
+        
     }
 }
