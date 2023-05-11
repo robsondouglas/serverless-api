@@ -1,11 +1,12 @@
 import type { AWS } from '@serverless/typescript';
-import { auth, addTask, addImage, readTask, listTask, listImages, removeTask, wsConn, wsDisc, wsDefault } from './src/index'
+import * as functions from './src/index'
 
 const stage       = '${opt:stage, "dev"}'
 const tblTask     = `TSK_TASK_${stage}`;
 const tblGallery  = `TSK_GALLERY_${stage}`;
-const bktTmp      = `tmp.sls.poc`;
-const bktPriv     = `priv.sls.poc`;
+const tblSchedule = `TSK_SCHEDULE_${stage}`;
+const bktTmp      = `temp.photo.poc.${stage.toLowerCase}`;
+const bktPriv     = `priv.photo.poc.${stage.toLowerCase}`;
 const keyAWS      = 813397945060;
 
 const serverlessConfiguration: AWS = {
@@ -46,8 +47,8 @@ const serverlessConfiguration: AWS = {
     }
   },
   // import the function via paths
-  functions: { auth, addTask, addImage, readTask, listTask, listImages, removeTask, wsConn, wsDisc, wsDefault },
-  package:   { individually: true },
+  functions: functions,
+  package: { individually: true },
   
   custom: {
     dynamodb: {
@@ -116,6 +117,41 @@ const serverlessConfiguration: AWS = {
             ReadCapacityUnits:  10,
             WriteCapacityUnits: 2
           }
+        }
+      },
+      tblSchedule: {
+        Type: 'AWS::DynamoDB::Table',
+        Properties: {
+          TableName: tblSchedule,
+          AttributeDefinitions:[
+            {AttributeName:'AlertTime',    AttributeType: 'N'},
+            {AttributeName:'IdOwner',     AttributeType: 'S'}
+          ],
+          KeySchema:[
+            {AttributeName: 'AlertTime', KeyType: 'HASH'},
+            {AttributeName: 'IdOwner',  KeyType:  'RANGE'}
+          ],
+          ProvisionedThroughput: {
+            ReadCapacityUnits:  10,
+            WriteCapacityUnits: 2
+          }
+        }
+      },
+      bktTmp:{
+        Type: 'AWS::S3::Bucket',
+        Properties:{
+          BucketName: bktTmp,
+          AccessControl: 'Private',
+          LifecycleConfiguration: {
+            Rules: [ {Id: "AutoClean", ExpirationInDays: 1} ]
+          }
+        }
+      },
+      bktPriv: {
+        Type: 'AWS::S3::Bucket',
+        Properties:{
+          BucketName: bktPriv,
+          AccessControl: 'Private'
         }
       }
     }

@@ -1,4 +1,5 @@
-import { flatDate, addTime, clusterDate } from "./utils";
+import axios from "axios";
+import { flatDate, addTime, clusterDate, requestUpload, moveFile, requestDownload } from "./utils";
 
 describe('UTILS', ()=>{
     it('FLATDATE',()=>{
@@ -16,4 +17,27 @@ describe('UTILS', ()=>{
         const d = clusterDate(new Date(1683305990399));        
         expect(d).toMatchObject({ day: 1683244800000, week: 1682812800000, month: 1682899200000 })
     })
+
+    it('REQUEST UPLOAD', async()=>{
+        await expect(requestUpload()).resolves.not.toThrowError();
+        const {url} = await requestUpload();
+        await expect(axios.put(url, {data: 'TESTE'})).resolves.not.toThrowError();
+    })
+
+    it('MOVE', async()=>{
+        const {url, id} = await requestUpload();
+        await axios.put(url, 'TESTE');
+
+        await expect(moveFile(id, `teste/${id}`)).resolves.not.toThrowError();
+    })
+
+    it('REQUEST DOWNLOAD', async()=>{
+        const {url, id} = await requestUpload();
+        await axios.put(url, 'TESTE');
+        await moveFile(id, `teste/${id}`);
+        expect(requestDownload(`teste/${id}`)).resolves.not.toThrowError();
+        const {url : download} = await requestDownload(`teste/${id}`); 
+        await expect(axios.get(download)).resolves.toMatchObject({data: 'TESTE'});
+    })
+
 });        

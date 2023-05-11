@@ -72,7 +72,6 @@ export class Task{
             if(itm.StartTime.valueOf() >= itm.EndTime.valueOf())
             { throw new Error(MESSAGES.TASK.RULES.POST.START_END) }
             
-
             const scenes = this.loadScenes(itm.StartTime, itm.IdOwner);
             
             for(const scene of scenes){

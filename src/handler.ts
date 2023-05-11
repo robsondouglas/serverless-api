@@ -1,5 +1,6 @@
 import { App } from "./app/app";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
+import { requestUpload } from "./libs/utils";
 
 const generatePolicy = (principalId, effect, resource, data) => {
   const authResponse = {
@@ -58,10 +59,9 @@ const fail = (err:Error)=>({
 });
 
 const exec = async(event:any, hnd:(app:App, data:any)=>any)=>{
-  const data = {
-    ...JSON.parse(event.body), 
-    IdOwner: event.requestContext.authorizer.sub //IdOwner preenchido pelos access_token
-  };
+  const owner = {IdOwner: event.requestContext?.authorizer?.sub}; //IdOwner preenchido pelos access_token 
+  
+  const data = { ...(event?.body && JSON.parse(event.body)), ...owner } ;
   
   try
   { return success(await hnd(new App(), data)); }
@@ -76,15 +76,16 @@ export const removeTask  = async (event) => await exec(event, (app, body) => app
 
 export const addImg           = async (event) => await exec(event, (app, body) => app.addImage(body));
 export const listImgs         = async (event) => await exec(event, (app, body) => app.listImages(body));
-export const requestPostImage = async (event) => await exec(event, (app, _) => app.requestPostImage());
+export const requestPostImage = async ()      => await requestUpload();
+export const runScheduleds    = async (event) => await exec(event, (app, _) => app.runScheduleds());
 
-export const wsConn = async(event, _, callback) => {
+
+export const wsConn = async(_, __, callback) => {
   const successfullResponse = {
     statusCode: 200,
     body: 'Success'
   }
 
-  console.log(event);
   callback(null, successfullResponse)
   
 }

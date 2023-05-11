@@ -5,7 +5,8 @@ export interface IPK{
 
 export interface IData extends IPK{
     DateAdd: Date,
-    Title: string
+    Title: string,
+    Url:string
 }
 
 export interface IFIlter{ 

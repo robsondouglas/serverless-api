@@ -14,14 +14,16 @@ export class Gallery{
     private mdl2db = (mdl:IData):Record<string, AttributeValue>=>({
         ...this.pk2db(mdl),
         DateAdd:   {N:      mdl.DateAdd.valueOf().toString()},
-        Title:     {S:      mdl.Title}
+        Title:     {S:      mdl.Title},
+        Url:       {S:      mdl.Url}
     });
 
     private db2mdl = (itm:any)=>({
         IdOwner:    itm.IdOwner.S,
         IdPicture:  itm.IdPicture.S,
         DateAdd:    new Date( Number.parseInt(itm.DateAdd.N) ),
-        Title:      itm.Title.S
+        Title:      itm.Title.S,
+        Url:        itm.Url.S
     });
 
     async get(pk:IPK){
@@ -45,6 +47,9 @@ export class Gallery{
             
             if(!itm.Title)
             { throw new Error(MESSAGES.GALLERY.REQUIREDS.POST.TITLE) }
+
+            if(!itm.Url)
+            { throw new Error(MESSAGES.GALLERY.REQUIREDS.POST.URL) }
 
             
             await ddb.send( new PutItemCommand({
@@ -83,5 +88,4 @@ export class Gallery{
 
         return Items.map(m=>this.db2mdl(m));
     }
-
 }

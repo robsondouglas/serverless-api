@@ -10,7 +10,8 @@ describe('APP/GALLERY', ()=>{
         IdOwner: owner,
         IdPicture: randomUUID(),
         DateAdd:   dateAdd,   
-        Title:   title
+        Title:   title,
+        Url: `https://teste.com/${randomUUID()}`
     });
     
     it("POST", async()=>{
@@ -19,6 +20,7 @@ describe('APP/GALLERY', ()=>{
         await expect(gallery.post([ {...itm, IdOwner: null} ])).rejects.toThrow(MESSAGES.GALLERY.REQUIREDS.POST.OWNER);
         await expect(gallery.post([ {...itm, DateAdd: null} ])).rejects.toThrow(MESSAGES.GALLERY.REQUIREDS.POST.DATEADD);
         await expect(gallery.post([ {...itm, Title: null} ])).rejects.toThrow(MESSAGES.GALLERY.REQUIREDS.POST.TITLE);
+        await expect(gallery.post([ {...itm, Url: null} ])).rejects.toThrow(MESSAGES.GALLERY.REQUIREDS.POST.URL);
         
         await expect(gallery.post([ itm ])).resolves.not.toThrow();
     })

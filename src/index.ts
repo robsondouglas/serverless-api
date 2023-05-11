@@ -124,3 +124,11 @@ export const wsDefault = {
   description: "WebSocket", 
   events: [ { websocket: {authorizer: 'auth', route: '$default'} } ],
 };
+
+export const scheduledTasks = {
+  handler: `${handlerPath(__dirname)}/handler.runScheduleds`,
+  description: "Executa os alertas das tarefas agendadas", 
+  memorySize: 128,
+  timeout: 3,
+  events: [ { schedule: "rate(1 minute)" } ],
+};

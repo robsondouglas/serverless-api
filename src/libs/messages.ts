@@ -21,8 +21,18 @@ export const MESSAGES = {
                 OWNER: 'Não é possível incluir uma imagem sem um proprietário',
                 DATEADD: 'Não é possível incluir uma imagem sem uma data de cadastro',
                 TITLE: 'Não é possível incluir uma imagem sem um título',
+                URL: 'Não é possível incluir uma imagem sem URL',
             }
-        }
-        
+        }       
+    },
+    SCHEDULE:{
+        REQUIREDS:{
+            POST:{
+                OWNER: 'Não é possível incluir um alerta sem um proprietário',
+                ALERTTIME: 'Não é possível incluir um alerta sem uma data',
+                MESSAGE: 'Não é possível incluir um alerta sem um mensagem',
+                CHANNELS: 'Não é possível incluir um alerta sem canais de envio',
+            }
+        }       
     }
 }
