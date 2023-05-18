@@ -22,24 +22,24 @@ export const auth    = async(event, _, callback)=> {
   const tokenValue = (event.authorizationToken || event.headers['Authorization'])?.split(' ')[1] ;
 
   if(!tokenValue)
-  {
-    callback('Unauthorized');
-  }
+  { callback('Unauthorized'); }
   else
   {
-    // Verifier that expects valid access tokens:
-    const verifier = CognitoJwtVerifier.create({
-      userPoolId: 'sa-east-1_28VaLNwAP',
-      clientId:   '7joob4d238qo57i2gdmnkpava2',
-      tokenUse: "access"    
-    });
-
     try {
+      const verifier = CognitoJwtVerifier.create({
+        userPoolId: 'sa-east-1_28VaLNwAP',
+        clientId:   '7joob4d238qo57i2gdmnkpava2',
+        tokenUse: "access"    
+      });
+      
       const payload = await verifier.verify(tokenValue);
       callback(null, generatePolicy(payload.sub, 'Allow', event.methodArn, payload));
-
-    } catch 
-    { callback('Unauthorized'); }
+    } 
+    catch(e)
+    {
+      console.log(e) 
+      callback('Unauthorized'); 
+    }
   }
   
 }
@@ -60,8 +60,9 @@ const fail = (err:Error)=>({
 
 const exec = async(event:any, hnd:(app:App, data:any)=>any)=>{
   const owner = {IdOwner: event.requestContext?.authorizer?.sub}; //IdOwner preenchido pelos access_token 
-  
-  const data = { ...(event?.body && JSON.parse(event.body)), ...owner } ;
+  const body = event?.body && JSON.parse(event.body)
+
+  const data =  Array.isArray(body) ? body.map(m=> ({ ...m, ...owner })) : { ...body, ...owner };
   
   try
   { return success(await hnd(new App(), data)); }
@@ -69,15 +70,18 @@ const exec = async(event:any, hnd:(app:App, data:any)=>any)=>{
   { return fail(ex); }
 }
 
-export const addTask     = async (event) => await exec(event, (app, body) => app.addTask({...body, StartTime: new Date(body.StartTime), EndTime: new Date(body.EndTime) }));
+
+
+export const addTask     = async (event) => await exec(event, (app, body) => app.addTask(body));
 export const readTask    = async (event) => await exec(event, (app, body) => app.getTask(body));
-export const listTasks   = async (event) => await exec(event, (app, body) => app.listTasks({...body, minDate: new Date(body.minDate), maxDate: new Date(body.maxDate)}));
+export const listTasks   = async (event) => await exec(event, (app, body) => app.listTasks(body));
 export const removeTask  = async (event) => await exec(event, (app, body) => app.deleteTask(body));
 
-export const addImg           = async (event) => await exec(event, (app, body) => app.addImage(body));
-export const listImgs         = async (event) => await exec(event, (app, body) => app.listImages(body));
-export const requestPostImage = async ()      => await requestUpload();
-export const runScheduleds    = async (event) => await exec(event, (app, _) => app.runScheduleds());
+export const addImg            = async (event) => await exec(event, (app, body) => app.addImage(body));
+export const listImgs          = async (event) => await exec(event, (app, body) => app.listImages(body));
+export const requestPostImage  = async ()      => await requestUpload();
+export const enqueueSchedules  = async (event) => await exec(event, (app, _) => app.enqueueSchedules());
+export const scheduledRun      = async (event) => await exec(event, (app, _) => app.runSchedules(event.Records.map( ({Body})=> JSON.parse(Body))));
 
 
 export const wsConn = async(_, __, callback) => {

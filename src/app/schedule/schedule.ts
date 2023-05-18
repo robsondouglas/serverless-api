@@ -1,37 +1,32 @@
-import { AttributeValue, DeleteItemCommand, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { AttributeValue, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { IData, IFilter, IPK } from "./models";
 import { MESSAGES } from "../../libs/messages";
+import { Base } from "../base";
 
-const ddb = new DynamoDBClient({ region: "local", endpoint: "http://localhost:8000"  });
-const tblSchedule = process.env.tblSchedule;
-
-export class Schedule{
-    private pk2db = (pk:IPK):Record<string, AttributeValue> => ({
+export class Schedule extends Base<IPK, IData>{
+    constructor(){
+        super(process.env.tblSchedule);
+    }
+    protected pk2db = (pk:IPK):Record<string, AttributeValue> => ({
         AlertTime:   {N:  (Math.floor(pk.AlertTime.valueOf()/60000)*60000).toString()},
         IdOwner:     {S:  pk.IdOwner}        
     })
 
-    private mdl2db = (mdl:IData):Record<string, AttributeValue>=>({
+    protected mdl2db = (mdl:IData):Record<string, AttributeValue>=>({
         ...this.pk2db(mdl),
         Message:     {S: mdl.Message},
         Channels:    {L: mdl.Channels.map(m=> ({M: { Name: {S: m.Name}, Contacts: {SS: m.Contacts} }}) )},
     });
    
-    private db2mdl = (itm:any):IData=>({
-        AlertTime:  new Date(Number.parseInt(itm.AlertTime.N)),
+    protected db2mdl = (itm:any):IData=>({
+        AlertTime:  Number.parseInt(itm.AlertTime.N),
         IdOwner:    itm.IdOwner.S,
         Message:    itm.Message.S,
         Channels:   itm.Channels.L.map( ({M:m})=> ({ Name: m.Name.S, Contacts: m.Contacts.SS }) )
     });
 
-
-    async get(pk:IPK){
-        const {Item} = await ddb.send( new GetItemCommand({
-            TableName: tblSchedule,
-            Key: this.pk2db(pk)          
-        }));
-        
-        return Item ? this.db2mdl(Item) : null;
+    get(pk:IPK){
+        return super._get(pk)
     }
 
     async post(items:IData[]){        
@@ -50,23 +45,17 @@ export class Schedule{
             if(!itm.Channels || itm.Channels.length === 0)
             { throw new Error(MESSAGES.SCHEDULE.REQUIREDS.POST.CHANNELS) }
 
-            await ddb.send( new PutItemCommand({
-                TableName: tblSchedule,
-                Item: this.mdl2db(itm)
-            }));
+            await super._post(itm);
         }
     }
 
     async del (pk:IPK){
-        await ddb.send( new DeleteItemCommand({
-            TableName: tblSchedule,
-            Key: this.pk2db(pk)
-        }));
+        await super._del(pk)
     }
 
     async list(filter: IFilter){
-        const {Items} = await ddb.send(new QueryCommand({
-            TableName: tblSchedule,
+        const {Items} = await this.ddb().send(new QueryCommand({
+            TableName: this.tblName,
             KeyConditionExpression: 'AlertTime=:v1',
             ExpressionAttributeValues: {
                 ":v1": {N: (Math.floor(filter.AlertTime.valueOf()/60000)*60000).toString()}, 

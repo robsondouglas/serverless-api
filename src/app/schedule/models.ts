@@ -1,13 +1,13 @@
 export interface IPK{
-    AlertTime: Date,
+    AlertTime: number,
     IdOwner: string,
 }
 
 export interface IData extends IPK{
     Message: string,
-    Channels: { Name: string, Contacts: string[] }[]
+    Title: string,
 }
 
 export interface IFilter{
-    AlertTime: Date    
+    AlertTime: number    
 }

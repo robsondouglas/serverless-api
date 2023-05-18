@@ -1,5 +1,6 @@
 import axios from "axios";
-import { flatDate, addTime, clusterDate, requestUpload, moveFile, requestDownload } from "./utils";
+import { flatDate, addTime, clusterDate, requestUpload, moveFile, requestDownload, enqueue, sendSMS } from "./utils";
+import { MESSAGES } from "./messages";
 
 describe('UTILS', ()=>{
     it('FLATDATE',()=>{
@@ -38,6 +39,21 @@ describe('UTILS', ()=>{
         expect(requestDownload(`teste/${id}`)).resolves.not.toThrowError();
         const {url : download} = await requestDownload(`teste/${id}`); 
         await expect(axios.get(download)).resolves.toMatchObject({data: 'TESTE'});
+    });
+
+    it('ENQUEUE', async()=>{
+        await expect(enqueue('XPTO', {teste: 1})).rejects.toThrow(MESSAGES.UTILS.QUEUE_NOT_FOUND)
+        await expect(enqueue(process.env.sqsSchedule, {teste: 1})).resolves.not.toThrow()
+    });
+
+    it('SEND SMS', async()=>{
+        await expect(sendSMS('+5521972648981', 'TESTE')).resolves.not.toThrow();
     })
+
+    // it('SEND WHATSAPP', async()=>{
+    //     await expect(sendWhatsApp('TESTE')).resolves.not.toThrow();
+    // })
+
+
 
 });        

@@ -1,39 +1,45 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, DeleteItemCommand} from '@aws-sdk/client-dynamodb';
+import {  QueryCommand, AttributeValue} from '@aws-sdk/client-dynamodb';
 import { IData, IFIlter, IPK } from './models';
 import { clusterDate } from '../../libs/utils';
 import { MESSAGES } from '../../libs/messages';
+import { Base } from '../base';
 
-const ddb = new DynamoDBClient({ region: "local", endpoint: "http://localhost:8000"  });
-const tblTask = process.env.tblTask;
+export class Task extends Base<IPK, IData> {
+    constructor(){
+        super(process.env.tblTask)
+    }
 
-export class Task{
+    protected pk2db(pk: IPK): Record<string, AttributeValue> {
+        return {
+            IdOwner:   {S:      pk.IdOwner},
+            IdTask:    {S:      pk.IdTask },        
+        }
+    }
+    protected mdl2db(mdl: IData): Record<string, AttributeValue> {
+        return {
+                ...this.pk2db(mdl),
+                StartTime: {N:      mdl.StartTime.toString()},
+                EndTime:   {N:      mdl.EndTime.toString()},
+                GroupId:   {N:      mdl.GroupId.toString()},
+                IsAllDay:  {BOOL:   mdl.IsAllDay},
+                Subject:   {S:      mdl.Subject}
+            }
+    }
+    protected db2mdl(itm: Record<string, AttributeValue>): IData {
+        return {
+            IdOwner:   itm.IdOwner.S,
+            IdTask:    itm.IdTask.S,
+            StartTime: Number.parseInt(itm.StartTime.N),
+            EndTime:   Number.parseInt(itm.EndTime.N),
+            GroupId:   Number.parseInt(itm.GroupId.N),
+            IsAllDay:  itm.IsAllDay.BOOL,
+            Subject:   itm.Subject.S
+        }
+    }
 
-    private pk2db = (pk:IPK) => ({
-        IdOwner:   {S:      pk.IdOwner},
-        IdTask:    {S:      pk.IdTask },        
-    })
 
-    private mdl2db = (mdl:IData)=>({
-        ...this.pk2db(mdl),
-        StartTime: {N:      mdl.StartTime.valueOf().toString()},
-        EndTime:   {N:      mdl.EndTime.valueOf().toString()},
-        GroupId:   {N:      mdl.GroupId.toString()},
-        IsAllDay:  {BOOL:   mdl.IsAllDay},
-        Subject:   {S:      mdl.Subject}
-    });
-
-    private db2mdl = (itm:any)=>({
-        IdOwner:   itm.IdOwner.S,
-        IdTask:    itm.IdTask.S,
-        StartTime: new Date( Number.parseInt(itm.StartTime.N) ),
-        EndTime:   new Date( Number.parseInt(itm.EndTime.N) ),
-        GroupId:   Number.parseInt(itm.GroupId.N),
-        IsAllDay:  itm.IsAllDay.BOOL,
-        Subject:   itm.Subject.S
-    });
-
-    private loadScenes = (d:Date, id:string) => {
-        const {day, week, month} = clusterDate(d);
+    private loadScenes = (d:number, id:string) => {
+        const {day, week, month} = clusterDate(new Date(d));
         return [
             `D|${day}|${id}`,
             `W|${week}|${id}`,
@@ -43,14 +49,10 @@ export class Task{
     }
     
     async get(pk:IPK){
-        const {Item} = await ddb.send( new GetItemCommand({
-            TableName: tblTask,
-            Key: this.pk2db(pk)             
-        }));
-        
-        return Item ? this.db2mdl(Item) : null;
+        return super._get(pk)
     }
 
+    
     async post(items:IData[]){        
         for(const itm of items)
         {
@@ -75,10 +77,7 @@ export class Task{
             const scenes = this.loadScenes(itm.StartTime, itm.IdOwner);
             
             for(const scene of scenes){
-                await ddb.send( new PutItemCommand({
-                    TableName: tblTask,
-                    Item: this.mdl2db({...itm, IdOwner: scene})
-                }));
+                await super._post({...itm, IdOwner: scene});
             }
         }
     }
@@ -90,10 +89,7 @@ export class Task{
             const scenes = this.loadScenes(itm.StartTime, itm.IdOwner);
 
             for(const scene of scenes){
-                await ddb.send( new DeleteItemCommand({
-                    TableName: tblTask,
-                    Key: this.pk2db({ ...pk, IdOwner: scene })                     
-                }));
+                await super._del({ ...pk, IdOwner: scene });
             } 
         }
     }
@@ -111,14 +107,14 @@ export class Task{
         const [DAY, WEEK, MONTH] = this.loadScenes(filter.DateRef, filter.IdOwner);
         const scene = {DAY, WEEK, MONTH}; 
         
-        const {Items} = await ddb.send(new QueryCommand({
-            TableName: tblTask,
+        const {Items} = await this.ddb().send(new QueryCommand({
+            TableName: this.tblName,
             KeyConditionExpression: 'IdOwner=:v1',
             ExpressionAttributeValues: {
                 ":v1": {S: scene[filter.Scene]}, 
             },
         }));
-
+        
         return Items.map(m=>this.db2mdl(m));
     }
 }

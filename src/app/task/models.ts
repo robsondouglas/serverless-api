@@ -1,3 +1,4 @@
+
 export interface IPK{ 
     IdOwner:string, 
     IdTask: string,     
@@ -5,14 +6,14 @@ export interface IPK{
 
 export interface IData extends IPK{
     Subject: string,
-    StartTime: Date,
-    EndTime: Date,
+    StartTime: number,
+    EndTime: number,
     GroupId: number,
     IsAllDay: boolean
 }
 
 export interface IFIlter{ 
     IdOwner:string, 
-    DateRef:Date, 
+    DateRef:number, 
     Scene:'DAY'|'WEEK'|'MONTH' 
 }

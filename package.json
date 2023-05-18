@@ -15,12 +15,15 @@
         "@aws-sdk/client-apigatewaymanagementapi": "^3.327.0",
         "@aws-sdk/client-dynamodb": "^3.325.0",
         "@aws-sdk/client-s3": "^3.325.0",
+        "@aws-sdk/client-sns": "^3.332.0",
+        "@aws-sdk/client-sqs": "^3.332.0",
         "@aws-sdk/s3-request-presigner": "^3.325.0",
         "@middy/core": "^3.4.0",
         "@middy/http-json-body-parser": "^3.4.0",
         "aws-jwt-verify": "^4.0.0",
         "axios": "^1.4.0",
-        "serverless-dynamodb-local": "^0.2.40"
+        "serverless-dynamodb-local": "^0.2.40",
+        "web-push": "^3.6.1"
     },
     "devDependencies": {
         "@serverless/typescript": "^3.0.0",

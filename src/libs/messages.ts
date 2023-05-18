@@ -34,5 +34,8 @@ export const MESSAGES = {
                 CHANNELS: 'Não é possível incluir um alerta sem canais de envio',
             }
         }       
+    },
+    UTILS:{
+        QUEUE_NOT_FOUND: 'A fila informada não existe'
     }
 }

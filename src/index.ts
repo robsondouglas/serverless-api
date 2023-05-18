@@ -122,13 +122,30 @@ export const wsDisc = {
 export const wsDefault = {
   handler: `${handlerPath(__dirname)}/handler.wsDefault`,
   description: "WebSocket", 
-  events: [ { websocket: {authorizer: 'auth', route: '$default'} } ],
+  events: [ { websocket: {route: '$default'} } ],
 };
 
-export const scheduledTasks = {
-  handler: `${handlerPath(__dirname)}/handler.runScheduleds`,
-  description: "Executa os alertas das tarefas agendadas", 
+export const enqueueSchedules = (evtName)=>({
+  handler: `${handlerPath(__dirname)}/handler.enqueueSchedules`,
+  description: "Enfileira as tarefas para serem executadas", 
   memorySize: 128,
   timeout: 3,
-  events: [ { schedule: "rate(1 minute)" } ],
-};
+  events: [{ 
+    schedule: {
+      name:evtName, 
+      rate: ["rate(1 minute)"]
+  }}],
+});
+
+export const runSchedules = (sqsName)=>({
+  handler: `${handlerPath(__dirname)}/handler.runSchedules`,
+  description: "Executa os alertas das tarefas enfileiradas", 
+  memorySize: 128,
+  timeout: 3,
+  events: [{
+    sqs: { 
+      arn: {"Fn::GetAtt": [sqsName, 'Arn']},
+      batchSize: 30,
+      maximumBatchingWindow: 5 
+  }}]
+})
