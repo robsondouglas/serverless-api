@@ -12,13 +12,12 @@ export const addTask = {
   description: "Incluir um compromisso da agenda.", 
   memorySize: 128,
   timeout: 3,
-  
   events: [
     {
-      http: {
+      httpApi: {
         method: 'post',
-        authorizer: 'auth',
-        path: 'task/add',
+        authorizer: {name: 'auth'},
+        path: '/task/add',
       },
     },
   ],
@@ -31,10 +30,10 @@ export const readTask = {
   timeout: 3,
   events: [
     {
-      http: {
+      httpApi: {
         method: 'post',
-        authorizer: 'auth',
-        path: 'task/read',
+        authorizer: {name: 'auth'},
+        path: '/task/read',
       },
     },
   ],
@@ -47,10 +46,10 @@ export const listTask = {
   timeout: 3,
   events: [
     {
-      http: {
+      httpApi: {
         method: 'post',
-        authorizer: 'auth',
-        path: 'task/list',
+        authorizer: {name: 'auth'},
+        path: '/task/list',
       },
     },
   ],
@@ -63,10 +62,10 @@ export const removeTask = {
   timeout: 3,
   events: [
     {
-      http: {
+      httpApi: {
         method: 'post',
-        authorizer: 'auth',
-        path: 'task/remove',
+        authorizer: {name: 'auth'},
+        path: '/task/remove',
       },
     },
   ],
@@ -81,10 +80,10 @@ export const addImage = {
   
   events: [
     {
-      http: {
+      httpApi: {
         method: 'post',
-        authorizer: 'auth',
-        path: 'img/add',
+        authorizer: {name: 'auth'},
+        path: '/img/add',
       },
     },
   ],
@@ -98,19 +97,53 @@ export const listImages = {
   timeout: 3,
   events: [
     {
-      http: {
+      httpApi: {
         method: 'post',
-        authorizer: 'auth',
-        path: 'img/list',
+        authorizer: {name: 'auth'},
+        path: '/img/list',
       },
     },
   ],
 };
 
+export const requestPostImage = {
+  handler: `${handlerPath(__dirname)}/handler.requestPostImage`,
+  description: "Solicita upload de imagem", 
+  memorySize: 128,
+  timeout: 3,
+  events: [
+    {
+      httpApi: {
+        method: 'post',
+        authorizer: {name: 'auth'},
+        path: '/img/requestUpload',
+      },
+    },
+  ],
+};
+
+
+export const processImage = (bucketName:string)=>({
+  handler: `${handlerPath(__dirname)}/handler.processImage`,
+  description: "Processa as imagens originais e as salva no diretórios de destino", 
+  memorySize: 512,
+  timeout: 5,
+  events: [
+    {
+      s3: {
+        bucket: bucketName,
+        existing: true,
+        event: 's3:ObjectCreated:*',
+        rules: [{prefix: 'original/'}]
+      },
+    },
+  ], 
+})
+
 export const wsConn = {
   handler: `${handlerPath(__dirname)}/handler.wsConn`,
   description: "WebSocket", 
-  events: [ { websocket: {authorizer: 'auth', route: '$connect'} }],
+  events: [ { websocket: {authorizer: {name: 'auth'}, route: '$connect'} }],
 };
 
 export const wsDisc = {

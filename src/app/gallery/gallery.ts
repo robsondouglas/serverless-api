@@ -17,17 +17,15 @@ export class Gallery extends Base<IPK, IData>{
 
     protected mdl2db = (mdl:IData):Record<string, AttributeValue>=>({
         ...this.pk2db(mdl),
-        DateAdd:   {N:      mdl.DateAdd.valueOf().toString()},
-        Title:     {S:      mdl.Title},
-        Url:       {S:      mdl.Url}
+        DateAdd:   {N:      (new Date()).valueOf().toString()},
+        Title:     {S:      mdl.Title}
     });
 
     protected db2mdl = (itm:any)=>({
         IdOwner:    itm.IdOwner.S,
         IdPicture:  itm.IdPicture.S,
         DateAdd:    new Date( Number.parseInt(itm.DateAdd.N) ),
-        Title:      itm.Title.S,
-        Url:        itm.Url.S
+        Title:      itm.Title.S
     });
 
     async get(pk:IPK){
@@ -40,15 +38,9 @@ export class Gallery extends Base<IPK, IData>{
             if(!itm.IdOwner)
             { throw new Error(MESSAGES.GALLERY.REQUIREDS.POST.OWNER) }
             
-            if(!itm.DateAdd)
-            { throw new Error(MESSAGES.GALLERY.REQUIREDS.POST.DATEADD) }
             
             if(!itm.Title)
             { throw new Error(MESSAGES.GALLERY.REQUIREDS.POST.TITLE) }
-
-            if(!itm.Url)
-            { throw new Error(MESSAGES.GALLERY.REQUIREDS.POST.URL) }
-
             
             await super._post(itm);
         }

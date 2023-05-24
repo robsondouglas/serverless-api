@@ -8,11 +8,10 @@ import { IData as IScheduleData } from './schedule/models';
 // import {
 //     ApiGatewayManagementApiClient,
 //   } from "@aws-sdk/client-apigatewaymanagementapi";
-import { enqueue, moveFile, sendChromeNotification } from '../libs/utils';
+import { downloadFile, enqueue, moveFile, resizeImage, sendChromeNotification, uploadFile } from '../libs/utils';
 import { Schedule } from './schedule/schedule';
 import { Subscription } from './subscription/subscription';
 
-//const client = new ApiGatewayManagementApiClient({ endpoint: 'http://localhost:3001' });
 const sqsSchedule = process.env.sqsSchedule;
 
 export class App{
@@ -23,7 +22,7 @@ export class App{
         
         const sch = new Schedule();
 
-        sch.post(items.map(m=>({ AlertTime: m.StartTime - 60000, Channels: [{ Name: 'SMS', Contacts: ['5521972648981'] }], IdOwner: m.IdOwner, Message: `Reunião ${m.Subject} em 1 min.`  })))
+        sch.post(items.map(m=>({ AlertTime: m.StartTime - 60000,  IdOwner: m.IdOwner, Title: 'LEMBRETE DE REUNIÃO', Message: `Reunião ${m.Subject} em breve`  })))
         
         // const enc = new TextEncoder();
         // const cmd = new PostToConnectionCommand({ ConnectionId: undefined, Data: enc.encode(JSON.stringify(itm)) });
@@ -56,26 +55,13 @@ export class App{
     }
 
     async runSchedules(items:IScheduleData[]){
-        const handle = {
-            // 'SMS': sendSMS,
-            // 'WHATSAPP': sendWhatsApp,
-            //'EMAIL': (IdOwner:string, contact:string, title:string, msg:string) => sendEmail( contact, title, msg ),
-            'PUSH_CHROME': async(IdOwner:string, contact:string, title, msg)=> {
-                const sub = new Subscription();
-                const s = await sub.get({ IdOwner, IdTopic: contact === 'TASK' ? 'TASK' : 'ALBUM' })
-                if(s)
-                { await sendChromeNotification(JSON.parse(s.Subscription), title, msg) }
-            }
-        }
-        
         const res: Promise<void>[]= []
         for(const item of items)
         {
-            for(const channel of item.Channels)
-            {
-                for(const contact of channel.Contacts)
-                { res.push(handle[channel.Name]?.(item.IdOwner, contact, 'LEMBRETE DE REUNIÃO', item.Message)) }
-            }
+            const sub = new Subscription();
+                const s = await sub.get({ IdOwner: item.IdOwner, Channel: 'PUSH-CHROME', IdTopic: 'TASK' })
+                if(s)
+                { await sendChromeNotification(JSON.parse(s.Subscription), item.Title, item.Message) }    
         }
 
         await Promise.all(res);
@@ -83,14 +69,26 @@ export class App{
 
     async addImage(items:IGalleryData[]){        
          const glr = new Gallery();
+         
          glr.post( items )
          for(const item of items)
-         { await moveFile(item.IdPicture, `photo/${item.IdPicture}`); }
+         {  await moveFile(item.IdPicture, `original/${item.IdPicture}`); }
     }
 
     listImages(filter: IGalleryFilter){
         const glr = new Gallery();
         return glr.list(filter); 
+    }
+
+    async processImage(path:string){
+        const h = [150, 900];   //thumb, full
+        const w = [ 200, 1200]  //thumb, full
+        
+        const f = await downloadFile(path);
+        const arq = path.split('/')[1];
+    
+        await resizeImage(f, h[0], w[0]).then( f => uploadFile(`thumbs/${arq}`, f) ),
+        await resizeImage(f, h[1], w[1]).then( f => uploadFile(`photos/${arq}`, f) )
     }
     
     async deleteImage(key: IGalleryPK){
@@ -107,7 +105,4 @@ export class App{
         const sub = new Subscription();
         await sub.del( pk );
     }
-
-
-
 }

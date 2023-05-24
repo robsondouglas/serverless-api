@@ -1,7 +1,10 @@
 export type Topic = 'TASK' | 'ALBUM';
+export type Channel = 'PUSH-CHROME' | 'SMS' | 'WHATSAPP' | 'EMAIL';
 export interface IPK{ 
     IdTopic: Topic,
-    IdOwner:string,         
+    IdOwner:string,
+    Channel: Channel,
+    IdSubscription?:string         
 }
 
 export interface IData extends IPK{

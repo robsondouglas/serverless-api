@@ -1,7 +1,7 @@
 import { AttributeValue, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { Base } from "../base";
 import { IData, IFIlter, IPK } from "./models";
-
+import { randomUUID } from "crypto";
 export class Subscription extends Base<IPK, IData>{
     
     constructor(){
@@ -9,9 +9,8 @@ export class Subscription extends Base<IPK, IData>{
     }
     
     protected pk2db = (pk:IPK) => ({
-        IdTopic: {S:      pk.IdTopic },
-        IdOwner: {S:      pk.IdOwner},
-        
+        IdTopic:        {S: pk.IdTopic},
+        IdSubscription: {S: `${pk.Channel}|${pk.IdOwner}|${ randomUUID() }`}
     })
 
     protected mdl2db = (mdl:IData):Record<string, AttributeValue>=>({
@@ -20,12 +19,17 @@ export class Subscription extends Base<IPK, IData>{
         Subscription:   {S:   mdl.Subscription},
     });
 
-    protected db2mdl = (itm:any)=>({
-        IdTopic:        itm.IdTopic.S,
-        IdOwner:        itm.IdOwner.S,
-        DateRef:        Number.parseInt(itm.DateRef.N),
-        Subscription:   itm.Subscription.S
-    });
+    protected db2mdl = (itm:any):IData=>{
+        const [Channel, IdOwner, IdSubscription] = itm.IdSubscription.S.split('|'); 
+        return {
+            IdTopic:        itm.IdTopic.S,
+            IdOwner,
+            Channel,  
+            IdSubscription,
+            DateRef:        Number.parseInt(itm.DateRef.N),
+            Subscription:   itm.Subscription.S
+        }
+    };
 
     async get(pk:IPK){
         return super._get(pk)

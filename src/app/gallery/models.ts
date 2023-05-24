@@ -5,10 +5,13 @@ export interface IPK{
 
 export interface IData extends IPK{
     DateAdd: Date,
-    Title: string,
-    Url:string
+    Title: string
 }
 
 export interface IFIlter{ 
     IdOwner:string
+}
+
+export interface IFIlterAll{ 
+    PageNumber:number
 }

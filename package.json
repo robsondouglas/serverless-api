@@ -23,6 +23,7 @@
         "aws-jwt-verify": "^4.0.0",
         "axios": "^1.4.0",
         "serverless-dynamodb-local": "^0.2.40",
+        "sharp": "^0.32.1",
         "web-push": "^3.6.1"
     },
     "devDependencies": {

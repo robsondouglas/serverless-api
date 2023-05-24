@@ -4,8 +4,8 @@ export interface IPK{
 }
 
 export interface IData extends IPK{
-    Message: string,
     Title: string,
+    Message: string
 }
 
 export interface IFilter{

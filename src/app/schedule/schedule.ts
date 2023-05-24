@@ -9,20 +9,20 @@ export class Schedule extends Base<IPK, IData>{
     }
     protected pk2db = (pk:IPK):Record<string, AttributeValue> => ({
         AlertTime:   {N:  (Math.floor(pk.AlertTime.valueOf()/60000)*60000).toString()},
-        IdOwner:     {S:  pk.IdOwner}        
+        IdOwner:     {S:  pk.IdOwner}
     })
 
     protected mdl2db = (mdl:IData):Record<string, AttributeValue>=>({
         ...this.pk2db(mdl),
-        Message:     {S: mdl.Message},
-        Channels:    {L: mdl.Channels.map(m=> ({M: { Name: {S: m.Name}, Contacts: {SS: m.Contacts} }}) )},
+        Message:  {S: mdl.Message},
+        Title:    {S: mdl.Title},
     });
    
     protected db2mdl = (itm:any):IData=>({
         AlertTime:  Number.parseInt(itm.AlertTime.N),
-        IdOwner:    itm.IdOwner.S,
-        Message:    itm.Message.S,
-        Channels:   itm.Channels.L.map( ({M:m})=> ({ Name: m.Name.S, Contacts: m.Contacts.SS }) )
+        IdOwner:  itm.IdOwner.S,
+        Message:  itm.Message.S,
+        Title:    itm.Title.S
     });
 
     get(pk:IPK){
@@ -38,12 +38,11 @@ export class Schedule extends Base<IPK, IData>{
             if(!itm.IdOwner)
             { throw new Error(MESSAGES.SCHEDULE.REQUIREDS.POST.OWNER) }
             
-        
+            if(!itm.Title)
+            { throw new Error(MESSAGES.SCHEDULE.REQUIREDS.POST.TITLE) }
+
             if(!itm.Message)
             { throw new Error(MESSAGES.SCHEDULE.REQUIREDS.POST.MESSAGE) }
-
-            if(!itm.Channels || itm.Channels.length === 0)
-            { throw new Error(MESSAGES.SCHEDULE.REQUIREDS.POST.CHANNELS) }
 
             await super._post(itm);
         }

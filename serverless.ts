@@ -12,7 +12,9 @@ const args = (key:string, defaultValue:string) =>  {
   }
 }
 
-const stage =  args('stage', 'dev')//'${opt:stage, "dev"}'
+const stage =  args('stage', 'dev');
+const projectName = 'taskmanager'
+const cognitoPoolId = 'sa-east-1_28VaLNwAP'
 
 const tables = {
   Task: {key: 'tblTask', name: `TSK_TASK_${stage}`},
@@ -28,19 +30,35 @@ const queues = {
   ]
 };
 
+
+
 const buckets = {
-  Temp: {key: 'bktPriv', name: `temp.photo.poc.${stage.toLowerCase()}`},
-  Priv: {key: 'bktTemp', name: `priv.photo.poc.${stage.toLowerCase()}`}
+  Temp: {key: 'bktTemp', name: `temp.photo.${projectName.toLowerCase()}.${stage.toLowerCase()}`},
+  Priv: {key: 'bktPriv', name: `priv.photo.${projectName.toLowerCase()}.${stage.toLowerCase()}`}
 };
 
+const cdns = {
+  Gallery: {key: 'cdnGallery', target: buckets.Priv}
+}
 
-const {runSchedules, enqueueSchedules, ...functions } = funcs
+const {runSchedules, enqueueSchedules, processImage, ...functions } = funcs
 const serverlessConfiguration: AWS = {
-  service: 'taskmanager',
+  service: projectName,
   frameworkVersion: '3',
   plugins: ['serverless-esbuild', 'serverless-offline', 'serverless-dynamodb-local'],
   provider: {
     name: 'aws',
+    httpApi: {
+      cors: { allowedOrigins: ['*'], allowedHeaders: ['Content-Type', 'Authorization'], allowedMethods: ['POST'], /*allowCredentials: true*/ },
+      authorizers: {
+        auth: {
+          type: 'jwt',
+        identitySource: '$request.header.Authorization',
+        issuerUrl: `https://cognito-idp.sa-east-1.amazonaws.com/${cognitoPoolId}`,
+        audience: ['7joob4d238qo57i2gdmnkpava2']
+        }
+      }
+    },
     region: 'sa-east-1',
     runtime: 'nodejs16.x',
     apiGateway: {
@@ -50,9 +68,9 @@ const serverlessConfiguration: AWS = {
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
-      ... Object.keys(tables).reduce((obj, k)=> { obj[k]  = tables[k].name; return obj }, {}),
-      ... Object.keys(buckets).reduce((obj, k)=> { obj[k] = buckets[k].name; return obj }, {}),
-      ... Object.keys(queues).reduce((obj, k)=> { obj[k] = queues[k][0].name; return obj }, {})
+      ... Object.keys(tables).reduce((obj, k)=> { obj[`tbl${k}`]  = tables[k].name; return obj }, {}),
+      ... Object.keys(buckets).reduce((obj, k)=> { obj[`bkt${k}`] = buckets[k].name; return obj }, {}),
+      ... Object.keys(queues).reduce((obj, k)=> { obj[`sqs${k}`] = queues[k][0].name; return obj }, {})
     },
     iam:{
       role:{
@@ -65,7 +83,7 @@ const serverlessConfiguration: AWS = {
               "s3:PutObject",
               "s3:DeleteObject"
             ],
-            Resource: Object.keys(buckets).map( k => ({"Fn::GetAtt": [buckets[k].key, 'Arn']}) ) 
+            Resource: Object.keys(buckets).map( k => ({"Fn::Sub":'arn:aws:s3:::${' + buckets[k].key + '}/*'}) ) 
           },
           {
             Effect: "Allow", 
@@ -80,7 +98,7 @@ const serverlessConfiguration: AWS = {
               "dynamodb:Update*",
               "dynamodb:PutItem"
             ],
-            Resource: Object.keys(tables).map( k => ({"Fn::GetAtt": [tables[k].key, 'Arn']}) )
+            Resource: [...Object.keys(tables).map( k => ({"Fn::GetAtt": [tables[k].key, 'Arn']}) ), {"Fn::Sub":'arn:aws:dynamodb:sa-east-1:${AWS::AccountId}:table/${' + tables.Gallery.key + '}/index/*'}]
           },
           {
             Effect: "Allow", 
@@ -96,7 +114,7 @@ const serverlessConfiguration: AWS = {
     }
   },
   // import the function via paths
-  functions: {...functions, runSchedules: runSchedules( 'sqsSchedule' ), enqueueSchedules: enqueueSchedules(`evtSchedule${stage}`)},
+  functions: {...functions, runSchedules: runSchedules( 'sqsSchedule' ), enqueueSchedules: enqueueSchedules(`evtSchedule${stage}`), processImage: processImage(buckets.Priv.name)},
   package: { individually: true },
   
   custom: {
@@ -114,11 +132,13 @@ const serverlessConfiguration: AWS = {
       bundle: true,
       minify: true,
       sourcemap: false,
+      external: ['sharp'],
       exclude: ['aws-sdk'],
       target: 'node16',
       define: { 'require.resolve': undefined },
       platform: 'node',
       concurrency: 10,
+      packagerOptions: {scripts: ['npm install --arch=x64 --platform=linux sharp']}
     },
   },
   resources:{
@@ -135,10 +155,7 @@ const serverlessConfiguration: AWS = {
             {AttributeName: 'IdOwner', KeyType:    'HASH'},
             {AttributeName: 'IdTask',  KeyType: 'RANGE'}
           ],
-          ProvisionedThroughput: {
-            ReadCapacityUnits:  10,
-            WriteCapacityUnits: 2
-          }
+          BillingMode: 'PAY_PER_REQUEST'
         }
       },
       [tables.Gallery.key]: {
@@ -162,10 +179,7 @@ const serverlessConfiguration: AWS = {
             ],
             Projection: {ProjectionType: "ALL"}
           }],
-          ProvisionedThroughput:{
-            ReadCapacityUnits:  10,
-            WriteCapacityUnits: 2
-          }
+          BillingMode: 'PAY_PER_REQUEST'
         }
       },
       [tables.Schedule.key]: {
@@ -180,10 +194,7 @@ const serverlessConfiguration: AWS = {
             {AttributeName: 'AlertTime', KeyType: 'HASH'},
             {AttributeName: 'IdOwner',  KeyType:  'RANGE'}
           ],
-          ProvisionedThroughput: {
-            ReadCapacityUnits:  10,
-            WriteCapacityUnits: 2
-          }
+          BillingMode: 'PAY_PER_REQUEST'
         }
       },
       [tables.Subscribe.key]: {
@@ -209,6 +220,11 @@ const serverlessConfiguration: AWS = {
         Properties:{
           BucketName: buckets.Temp.name,
           AccessControl: 'Private',
+          CorsConfiguration:{
+              CorsRules: [
+                {AllowedMethods: ['HEAD', 'GET', 'PUT'], AllowedOrigins: ['*'],  "AllowedHeaders": ["*"]}
+              ]
+          },
           LifecycleConfiguration: {
             Rules: [ {Id: "AutoClean", ExpirationInDays: 1, Status: 'Enabled'} ]
           }
@@ -236,7 +252,123 @@ const serverlessConfiguration: AWS = {
         Properties:{
           QueueName: queues.Schedule[1].name
         }
-      }
+      },
+      DefaultOAC: {
+        Type: "AWS::CloudFront::OriginAccessControl",
+        Properties:{ 
+          OriginAccessControlConfig: {
+              Name: 'DefaultOAC',
+              OriginAccessControlOriginType: "s3",
+              SigningBehavior: "always",
+              SigningProtocol: "sigv4"
+            }
+        }
+      },
+
+      DefaultOAI: {
+        Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+        Properties: {
+          CloudFrontOriginAccessIdentityConfig : {Comment: "OK!"}
+        } 
+      },
+
+      [cdns.Gallery.key]: {
+        Type : "AWS::CloudFront::Distribution",
+        DependsOn:[cdns.Gallery.target.key],
+        Properties: {
+          DistributionConfig: {
+            Origins: [
+              {
+                DomainName: `${cdns.Gallery.target.name}.s3.sa-east-1.amazonaws.com`,
+                Id: "static-hosting",
+                S3OriginConfig: { OriginAccessIdentity: "" },
+                OriginAccessControlId: {'Fn::GetAtt': ['DefaultOAC', 'Id']}
+              }
+            ],
+            Enabled: "true",
+            DefaultRootObject: "notfound.png",
+            CustomErrorResponses: [
+              {
+                ErrorCode: 404,
+                ResponseCode: 200,
+                ResponsePagePath: "/notfound.png"
+              },
+              {
+                ErrorCode: 403,
+                ResponseCode: 200,
+                ResponsePagePath: "/notfound.png"
+              }
+            ],
+            HttpVersion: "http2",
+            //Aliases: [ "web.example.com"],
+            // ViewerCertificate: {
+            //   "AcmCertificateArn": "arn:aws:acm:sa-east-1:Id-of-IAM-User:certificate/1xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxx",
+            //   "MinimumProtocolVersion": "TLSv1.2_2021",
+            //   "SslSupportMethod": "sni-only"
+            // },
+            ViewerCertificate: {
+              CloudFrontDefaultCertificate: true
+            },
+            DefaultCacheBehavior: {
+              AllowedMethods: [ 'HEAD', 'GET', 'OPTIONS' ],
+              Compress: true,
+              TargetOriginId: "static-hosting",
+              ForwardedValues: {
+                QueryString: "false",
+                Cookies: { Forward: "none" }
+              },
+              ViewerProtocolPolicy: "redirect-to-https"
+            }
+          }
+        }
+      },
+          
+        // Properties : {
+        //   DistributionConfig:{
+        //     //CNAMEs: ['gallery.meudominio.com.br'],
+        //     Enabled: true,
+        //     DefaultCacheBehavior: {
+        //       AllowedMethods: ['GET'],
+        //       TargetOriginId: `${cdns.Gallery.key}1`,
+        //       ViewerProtocolPolicy: 'redirect-to-https'
+        //     },
+        //     Origins:[{
+        //       Id: `${cdns.Gallery.key}Ori1`,
+        //       ConnectionAttempts: 1,
+        //       ConnectionTimeout: 1,
+        //       DomainName: `${cdns.Gallery.target.name}.s3-website.sa-east-1.amazonaws.com`,
+        //       S3OriginConfig: {
+        //         OriginAccessIdentity : {Ref: 'DefaultOAI'}
+        //       },
+        //       //OriginAccessControlId: {"Ref": 'DefaultOAC'},
+        //     }]
+        //   }
+        // }
+      //},
+      [cdns.Gallery.target.key + 'Policy']: {
+            Type: "AWS::S3::BucketPolicy",
+            Properties: {
+                Bucket: cdns.Gallery.target.name,
+                PolicyDocument: {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                      "Sid": "AllowCloudFrontServicePrincipalReadOnly",
+                      "Effect": "Allow",
+                      "Principal": {
+                          "Service": "cloudfront.amazonaws.com"
+                      },
+                      "Action": ["s3:GetObject"],
+                      "Resource": `arn:aws:s3:::${cdns.Gallery.target.name}/*`,
+                      "Condition": {
+                          "StringEquals": {
+                              "AWS:SourceArn":  {"Fn::Sub":'arn:aws:cloudfront::${AWS::AccountId}:distribution/${' + cdns.Gallery.key + '}'}// {"Fn::GetAtt": [cdns.Gallery.key, 'Arn']}
+                          }
+                      }
+                  }]
+                }
+            }
+        }
+    
     }
   }
 };

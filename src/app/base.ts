@@ -1,6 +1,7 @@
 import { DynamoDBClient, AttributeValue, GetItemCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 
-const ddb = new DynamoDBClient({ region: "localhost", endpoint: "http://localhost:8000"  });
+//const ddb = new DynamoDBClient({ region: "localhost", endpoint: "http://localhost:8000"  });
+const ddb = new DynamoDBClient({ region: "sa-east-1"  });
 
 export abstract class Base<TPK, TData>{
     constructor(protected tblName:string){
