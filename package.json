@@ -6,7 +6,8 @@
     "scripts": {
         "test": "jest",
         "dbinit": "sls dynamodb start --stage DEV",
-        "start": "sls offline start --stage DEV --region sa-east-1"
+        "start": "sls offline start --stage DEV --region sa-east-1",
+        "deploy": "sls deploy --stage DEV"
     },
     "engines": {
         "node": ">=14.15.0"

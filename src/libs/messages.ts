@@ -36,6 +36,9 @@ export const MESSAGES = {
         }       
     },
     UTILS:{
-        QUEUE_NOT_FOUND: 'A fila informada não existe'
+        QUEUE_NOT_FOUND: 'A fila informada não existe',
+        RESIZE_IMAGE_NOFILE: 'Não é possível redimensionar uma imagem nula',
+        RESIZE_IMAGE_FAIL: 'Falha ao redimensionar imagem',
+        
     }
 }

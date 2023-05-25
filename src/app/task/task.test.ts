@@ -45,7 +45,7 @@ describe('APP/TASK', ()=>{
         await task.post([ itm ]);
         const {IdOwner, IdTask} = itm;
         await expect(task.get({IdOwner, IdTask})).resolves.not.toBeNull();
-        await expect(task.del({IdOwner, IdTask})).resolves.not.toThrow();
+        await expect(task.del([{IdOwner, IdTask}])).resolves.not.toThrow();
         await expect(task.get({IdOwner, IdTask})).resolves.toBeNull();
         await expect(task.list({IdOwner, Scene: 'MONTH', DateRef: new Date().valueOf()})).resolves.toHaveLength(0);
         await expect(task.list({IdOwner, Scene: 'WEEK', DateRef: new Date().valueOf()})).resolves.toHaveLength(0);

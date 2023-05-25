@@ -82,22 +82,22 @@ export class Task extends Base<IPK, IData> {
         }
     }
 
-    async del (pk:IPK){
-        const itm = await this.get(pk);
-        
-        if(itm){
-            const scenes = this.loadScenes(itm.StartTime, itm.IdOwner);
+    async del (pks:IPK[]){
 
-            for(const scene of scenes){
-                await super._del({ ...pk, IdOwner: scene });
-            } 
+        for(const pk of pks)
+        {
+            const itm = await this.get(pk);
+            
+            if(itm){
+                const scenes = this.loadScenes(itm.StartTime, itm.IdOwner);
+                await Promise.all( scenes.map(scene=> super._del({ ...pk, IdOwner: scene })) );
+            }
         }
     }
 
     async put(items:IData[]){
         //REMOVENDO A VERSÃO ANTERIOR            
-        for(const itm of items)
-        { await this.del(itm); }
+        await this.del(  items );
 
         //CARREGANDO A NOVA VERSÃO
         await this.post(items)

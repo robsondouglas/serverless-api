@@ -16,4 +16,9 @@ describe('APP', ()=>{
         expect(res).resolves.not.toThrow();
     })
 
+    // it('LIST IMAGES', async()=>{
+    //     const res = app.listImages({IdOwner: ''}) 
+    //     expect(res).resolves.toHaveLength(3);
+    // })
+
 });

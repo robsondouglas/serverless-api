@@ -39,7 +39,7 @@ export class App{
         return task.list(filter);
     }
     
-    async deleteTask(key:ITaskPK){
+    async deleteTask(key:ITaskPK[]){
         const task = new Task();
         await task.del(key);
     }
@@ -69,8 +69,8 @@ export class App{
 
     async addImage(items:IGalleryData[]){        
          const glr = new Gallery();
-         
-         glr.post( items )
+         console.log('imagens', items)
+         await glr.post( items )
          for(const item of items)
          {  await moveFile(item.IdPicture, `original/${item.IdPicture}`); }
     }
@@ -84,11 +84,18 @@ export class App{
         const h = [150, 900];   //thumb, full
         const w = [ 200, 1200]  //thumb, full
         
-        const f = await downloadFile(path);
-        const arq = path.split('/')[1];
-    
-        await resizeImage(f, h[0], w[0]).then( f => uploadFile(`thumbs/${arq}`, f) ),
-        await resizeImage(f, h[1], w[1]).then( f => uploadFile(`photos/${arq}`, f) )
+        try{
+            const f = await downloadFile(path);
+            console.log('Download concluído')
+            const arq = path.split('/')[1];
+            console.log('file', arq);
+            await uploadFile(`thumbs/${arq}`, await resizeImage(f, h[0], w[0]));
+            await uploadFile(`photos/${arq}`, await resizeImage(f, h[1], w[1]));
+        }
+        catch(ex){
+            console.log('Falha ao processar a imagem', ex)
+            throw ex;
+        }
     }
     
     async deleteImage(key: IGalleryPK){

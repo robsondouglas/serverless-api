@@ -118,7 +118,9 @@ export const processImage      = async (event) => await execS3(event, (app, itm)
 
 export const enqueueSchedules  = async (event) => await exec(event, (app, _) => app.enqueueSchedules());
 export const scheduledRun      = async (event) => await exec(event, (app, _) => app.runSchedules(event.Records.map( ({Body})=> JSON.parse(Body))));
-
+export const subscribe         = async (event) => await exec(event, (app, body) => app.subscribe(body));
+export const unsubscribe       = async (event) => await exec(event, (app, body) => app.unsubscribe(body));
+  
 
 export const wsConn = async(_, __, callback) => {
   const successfullResponse = {

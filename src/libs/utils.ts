@@ -16,7 +16,7 @@ const chromeCredentials = {
 };
 
 const fbCredentials = {
-    token: 'EAALsud3i0s8BAD45BLfZAxtVCkUFPqmZAq9NDrAuREMlSuYdzTZCOxO2PhA6KWca17mnH1LGlDsugk6zGThHxHzkAhQGbFUqnjCdM3b6G3rgd5tiuZCLB9XWFB07VcS7AOJtnNd0bMZB0YNoFFUXyn0NRzXSADXwjZBAca1HdPDX590Xovm0XU00kwJikq3oK1QkFDhgwW9wFC0wZBSfNhC' 
+    token: '' 
 }
 
 export const flatDate = (d) => new Date(d.toDateString())
@@ -133,21 +133,36 @@ export const sendChromeNotification = async(subscription:any, title:string, text
 
 export const resizeImage = async(image:Blob, maxWidth:number, maxHeight:number)=>
 {
-    console.log('Resizing..')
-    const img = await Sharp(image);
-    const metadata = await img.metadata(); 
-        console.log(`Original - Width: ${metadata.width} | Height: ${metadata.height}`)
-        
-        if( metadata.width > metadata.height )
-        {  
-            return await img.resize(maxWidth, maxWidth/metadata.width * metadata.height)
-            .toFormat('png')
-            .toBuffer();
+    if(image)
+    {
+        try{
+            const img = await Sharp(image);
+            const metadata = await img.metadata(); 
+            console.log(`Original - Width: ${metadata.width} | Height: ${metadata.height}`)
+            
+            if( metadata.width > metadata.height )
+            {  
+                return await img.resize(maxWidth, maxWidth/metadata.width * metadata.height)
+                .toFormat('png')
+                .toBuffer();
+            }
+            else
+            {
+                return await img.resize(maxHeight/metadata.height * metadata.width, maxHeight)
+                .toFormat('png')
+                .toBuffer();
+            }
         }
-        else
+        catch(ex)
         {
-            return await img.resize(maxHeight/metadata.height * metadata.width, maxHeight)
-            .toFormat('png')
-            .toBuffer();
+            console.log('Falha ao redimensionar', ex)
+            throw ex;
         }
+    }
+    else
+    { 
+        console.log(MESSAGES.UTILS.RESIZE_IMAGE_NOFILE) 
+        throw Error(MESSAGES.UTILS.RESIZE_IMAGE_NOFILE)
+    }
+    
 }

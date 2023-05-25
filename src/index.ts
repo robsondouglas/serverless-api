@@ -140,6 +140,41 @@ export const processImage = (bucketName:string)=>({
   ], 
 })
 
+export const subscribe = {
+  handler: `${handlerPath(__dirname)}/handler.subscribe`,
+  description: "Registra a inscrição de push notifications por tópico", 
+  memorySize: 128,
+  timeout: 3,
+  
+  events: [
+    {
+      httpApi: {
+        method: 'post',
+        authorizer: {name: 'auth'},
+        path: '/notifications/subscribe',
+      },
+    },
+  ],
+};
+
+export const unsubscribe = {
+  handler: `${handlerPath(__dirname)}/handler.unsubscribe`,
+  description: "Remove a inscrição de push notifications por tópico", 
+  memorySize: 128,
+  timeout: 3,
+  
+  events: [
+    {
+      httpApi: {
+        method: 'post',
+        authorizer: {name: 'auth'},
+        path: '/notifications/unsubscribe',
+      },
+    },
+  ],
+};
+
+
 export const wsConn = {
   handler: `${handlerPath(__dirname)}/handler.wsConn`,
   description: "WebSocket", 
