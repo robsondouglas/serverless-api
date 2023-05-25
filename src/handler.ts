@@ -61,17 +61,20 @@ const success = (body:any)=>({
   
 });
 
-const fail = (err:Error)=>({
-  isBase64Encoded: false,
-  statusCode: 500,
-  body: err.message,
-  headers: {
-    "content-type": "application/json",
-    "Access-Control-Allow-Headers" : "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
-  },
-});
+const fail = (err:Error)=>{
+  console.log(err);
+  return {
+    isBase64Encoded: false,
+    statusCode: 500,
+    body: err.message,
+    headers: {
+      "content-type": "application/json",
+      "Access-Control-Allow-Headers" : "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+    },
+  }
+};
 
 const exec = async(event:any, hnd:(app:App, data:any)=>any)=>{
   
@@ -88,15 +91,30 @@ const exec = async(event:any, hnd:(app:App, data:any)=>any)=>{
 }
 
 const execS3 = async(event:any, hnd:(app:App, data:any)=>any)=>{
-  
 
   try
   { 
     console.log(JSON.stringify(event));
     const app = new App()
-    for(const r of event.Records){
-      console.log(JSON.stringify(r))
-      await hnd(app, r);
+    for(const record of event.Records){
+      console.log(JSON.stringify(record))
+      await hnd(app, record);
+    }
+
+    return success({}) ; 
+  }
+  catch(ex)
+  { return fail(ex); }
+}
+
+export const execSQS = async(event:any, hnd:(app:App, data:any)=>any)=>{
+  try
+  { 
+    console.log(JSON.stringify(event));
+    const app = new App()
+    for(const record of event.Records){
+      console.log(record.body)
+      await hnd(app, JSON.parse(record.body));
     }
 
     return success({}) ; 
@@ -111,15 +129,16 @@ export const readTask    = async (event) => await exec(event, (app, body) => app
 export const listTasks   = async (event) => await exec(event, (app, body) => app.listTasks(body));
 export const removeTask  = async (event) => await exec(event, (app, body) => app.deleteTask(body));
 
-export const addImg            = async (event) => await exec(event, (app, body) => app.addImage(body));
-export const listImgs          = async (event) => await exec(event, (app, body) => app.listImages(body));
+export const addImg            = async (event) => await exec(event, (app, body)     => app.addImage(body));
+export const listImgs          = async (event) => await exec(event, (app, body)     => app.listImages(body));
 export const requestPostImage  = async ()      => await requestUpload();
-export const processImage      = async (event) => await execS3(event, (app, itm) => app.processImage(itm.s3.object.key));      
+export const processImage      = async (event) => await execS3(event, (app, itm)    => app.processImage(itm.s3.object.key));      
 
-export const enqueueSchedules  = async (event) => await exec(event, (app, _) => app.enqueueSchedules());
-export const scheduledRun      = async (event) => await exec(event, (app, _) => app.runSchedules(event.Records.map( ({Body})=> JSON.parse(Body))));
-export const subscribe         = async (event) => await exec(event, (app, body) => app.subscribe(body));
-export const unsubscribe       = async (event) => await exec(event, (app, body) => app.unsubscribe(body));
+export const enqueueSchedules  = async (event) => await exec(event, (app, _)        => app.enqueueSchedules());
+export const runSchedules      = async (event) => await execSQS(event, (app, body)  => app.runSchedules(body));
+
+export const subscribe         = async (event) => await exec(event, (app, body)     => app.subscribe(body));
+export const unsubscribe       = async (event) => await exec(event, (app, body)     => app.unsubscribe(body));
   
 
 export const wsConn = async(_, __, callback) => {

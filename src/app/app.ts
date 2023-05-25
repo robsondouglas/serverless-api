@@ -47,32 +47,30 @@ export class App{
     async enqueueSchedules(){
         const schd = new Schedule();
         const alerts = await schd.list({AlertTime: new Date().valueOf()});
+        console.log(alerts);
         for(const alert of alerts)
         {  
+            console.log(alert)
             await enqueue( sqsSchedule, alert );
             await schd.del(alert);
         }
     }
 
-    async runSchedules(items:IScheduleData[]){
-        const res: Promise<void>[]= []
-        for(const item of items)
-        {
+    async runSchedules(item:IScheduleData){
+        
             const sub = new Subscription();
-                const s = await sub.get({ IdOwner: item.IdOwner, Channel: 'PUSH-CHROME', IdTopic: 'TASK' })
-                if(s)
-                { await sendChromeNotification(JSON.parse(s.Subscription), item.Title, item.Message) }    
-        }
-
-        await Promise.all(res);
+            const ls = await sub.list({ IdOwner: item.IdOwner, Channel: 'PUSH-CHROME', IdTopic: 'TASK' })
+            for(const s of ls)
+            { await sendChromeNotification(JSON.parse(s.Subscription), item.Title, item.Message) }    
+        
     }
 
     async addImage(items:IGalleryData[]){        
          const glr = new Gallery();
          console.log('imagens', items)
          await glr.post( items )
-         for(const item of items)
-         {  await moveFile(item.IdPicture, `original/${item.IdPicture}`); }
+         await Promise.all(items.map( item => moveFile(item.IdPicture, `original/${item.IdPicture}`) ))
+         
     }
 
     listImages(filter: IGalleryFilter){
@@ -88,7 +86,7 @@ export class App{
             const f = await downloadFile(path);
             console.log('Download concluído')
             const arq = path.split('/')[1];
-            console.log('file', arq);
+            
             await uploadFile(`thumbs/${arq}`, await resizeImage(f, h[0], w[0]));
             await uploadFile(`photos/${arq}`, await resizeImage(f, h[1], w[1]));
         }

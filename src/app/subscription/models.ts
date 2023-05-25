@@ -13,5 +13,7 @@ export interface IData extends IPK{
 }
 
 export interface IFIlter{ 
-    IdTopic: Topic 
+    IdTopic: Topic
+    Channel: Channel,
+    IdOwner: string 
 }

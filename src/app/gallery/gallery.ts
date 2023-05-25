@@ -2,7 +2,6 @@ import { AttributeValue, QueryCommand, UpdateItemCommand } from "@aws-sdk/client
 import { IData, IFIlter, IPK } from "./models";
 import { MESSAGES } from "../../libs/messages";
 import { Base } from "../base";
-import { randomUUID } from "crypto";
 
 
 export class Gallery extends Base<IPK, IData>{

@@ -47,9 +47,10 @@ export class Subscription extends Base<IPK, IData>{
     async list(filter: IFIlter){
         const {Items} = await this.ddb().send(new QueryCommand({
             TableName: this.tblName,
-            KeyConditionExpression: 'IdTopic=:v1',
+            KeyConditionExpression: 'IdTopic=:v1 AND begins_with(IdSubscription, :v2) ',
             ExpressionAttributeValues: {
-                ":v1": {S: filter.IdTopic}, 
+                ":v1": {S: filter.IdTopic},
+                ":v2": {S: `${filter.Channel}|${filter.IdOwner}|`}, 
             }
         }));
 

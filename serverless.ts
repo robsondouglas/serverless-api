@@ -20,7 +20,7 @@ const tables = {
   Task: {key: 'tblTask', name: `TSK_TASK_${stage}`},
   Gallery: {key: 'tblGallery', name: `TSK_GALLERY_${stage}`},
   Schedule: {key: 'tblSchedule', name: `TSK_SCHEDULE_${stage}`},
-  Subscribe: {key: 'tblSubscribe', name: `TSK_SUBSCRIBE_${stage}`}
+  Subscribe: {key: 'tblSubscription', name: `TSK_SUBSCRIPTION_${stage}`}
 };
 
 const queues = {
@@ -202,12 +202,12 @@ const serverlessConfiguration: AWS = {
         Properties: {
           TableName: tables.Subscribe.name,
           AttributeDefinitions:[
-            {AttributeName:'IdTopic',    AttributeType: 'S'},
-            {AttributeName:'IdOwner',     AttributeType: 'S'}
+            {AttributeName:'IdTopic',         AttributeType: 'S'},
+            {AttributeName:'IdSubscription',  AttributeType: 'S'}
           ],
           KeySchema:[
-            {AttributeName: 'IdTopic', KeyType: 'HASH'},
-            {AttributeName: 'IdOwner',  KeyType:  'RANGE'}
+            {AttributeName: 'IdTopic',        KeyType: 'HASH'},
+            {AttributeName: 'IdSubscription', KeyType:  'RANGE'}
           ],
           ProvisionedThroughput: {
             ReadCapacityUnits:  10,
